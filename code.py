@@ -6,10 +6,7 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 # 1 Create the word frequency table
 freq_table = _create_frequency_table(text)
 
-'''
-We already have a sentence tokenizer, so we just need 
-to run the sent_tokenize() method to create the array of sentences.
-'''
+
 
 # 2 Tokenize the sentences
 sentences = sent_tokenize(text)
