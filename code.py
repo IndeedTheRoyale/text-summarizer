@@ -1,53 +1,90 @@
 
-#OWN
-import MontyLingua
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize, sent_tokenize
 
-ml = MontyLingua.MontyLingua()
+# 1 Create the word frequency table
+freq_table = _create_frequency_table(text)
 
-f1 = open('gift-of-magi.txt')
-f2 = open('the-skylight-room.txt')
-f3 = open('the-cactus.txt')
+'''
+We already have a sentence tokenizer, so we just need 
+to run the sent_tokenize() method to create the array of sentences.
+'''
 
-# OWN - read the files
-text1 = f1.read()
-text2 = f2.read()
-text3 = f3.read()
+# 2 Tokenize the sentences
+sentences = sent_tokenize(text)
 
-# OWN - generates subject-verb-object-object tuples for each sentence
-tuples1 = ml.jist_predicates(text1)
-tuples2 = ml.jist_predicates(text2)
-tuples3 = ml.jist_predicates(text3)
+# 3 Important Algorithm: score the sentences
+sentence_scores = _score_sentences(sentences, freq_table)
 
-# OWN - flattens the above list of lists
-ftuples1 = [item for sublist in tuples1 for item in sublist]
-ftuples2 = [item for sublist in tuples2 for item in sublist]
-ftuples3 = [item for sublist in tuples3 for item in sublist]
+# 4 Find the threshold
+threshold = _find_average_score(sentence_scores)
 
-# OWN
-# s-v-o-o tuple for a sentence is of form:
-# ' "subject" "verb" "object" "object" '
-# the following line removes the first and last space, "
-# result: 'subject" "verb" "object" "object'
-stuples1 = [w[2:-2] for w in ftuples1]
-stuples2 = [w[2:-2] for w in ftuples2]
-stuples3 = [w[2:-2] for w in ftuples3]
+# 5 Important Algorithm: Generate the summary
+summary = _generate_summary(sentences, sentence_scores, 1.5 * threshold)
 
-# OWN
-# input: 'subject" "verb" "object" "object'
-# output: [subject, verb, object, object]
-btuples1 = [w.split('" "') for w in stuples1]
-btuples2 = [w.split('" "') for w in stuples2]
-btuples3 = [w.split('" "') for w in stuples3]
+print(summary)
 
-# OWN
-# generates summary for the input
-summary1 = ml.generate_summary(btuples1)
-summary2 = ml.generate_summary(btuples2)
-summary3 = ml.generate_summary(btuples3)
 
-# OWN - print the summary generated for each story
-print 'gift of magi:\n', summary1
 
-print '\n\nthe skylight room:\n', summary2
 
-print '\n\nthe cactus:\n', summary3
+
+def _create_frequency_table(text_string) -> dict:
+
+    stopWords = set(stopwords.words("english"))
+    words = word_tokenize(text_string)
+    ps = PorterStemmer()
+
+    freqTable = dict()
+    for word in words:
+        word = ps.stem(word)
+        if word in stopWords:
+            continue
+        if word in freqTable:
+            freqTable[word] += 1
+        else:
+            freqTable[word] = 1
+
+    return freqTable
+
+def _find_average_score(sentenceValue) -> int:
+    sumValues = 0
+    for entry in sentenceValue:
+        sumValues += sentenceValue[entry]
+
+    # Average value of a sentence from original text
+    average = int(sumValues / len(sentenceValue))
+
+    return average
+  
+  
+
+def _score_sentences(sentences, freqTable) -> dict:
+    sentenceValue = dict()
+
+    for sentence in sentences:
+        word_count_in_sentence = (len(word_tokenize(sentence)))
+        for wordValue in freqTable:
+            if wordValue in sentence.lower():
+                if sentence[:10] in sentenceValue:
+                    sentenceValue[sentence[:10]] += freqTable[wordValue]
+                else:
+                    sentenceValue[sentence[:10]] = freqTable[wordValue]
+
+        sentenceValue[sentence[:10]] = sentenceValue[sentence[:10]] // word_count_in_sentence
+
+    return sentenceValue
+
+  
+def _generate_summary(sentences, sentenceValue, threshold):
+    sentence_count = 0
+    summary = ''
+
+    for sentence in sentences:
+        if sentence[:10] in sentenceValue and sentenceValue[sentence[:10]] > (threshold):
+            summary += " " + sentence
+            sentence_count += 1
+
+    return summary
+  
+  
